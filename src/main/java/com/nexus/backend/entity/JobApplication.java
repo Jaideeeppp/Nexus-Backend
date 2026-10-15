@@ -28,6 +28,11 @@ public class JobApplication {
     @Column(nullable = false)
     private ApplicationStatus status = ApplicationStatus.WISHLIST;
 
+    // Each job application belongs to one user.
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     public JobApplication() {
     }
 
@@ -81,5 +86,13 @@ public class JobApplication {
 
     public void setStatus(ApplicationStatus status) {
         this.status = status;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

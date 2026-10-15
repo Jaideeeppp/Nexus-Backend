@@ -47,30 +47,34 @@ The application follows a layered architecture that separates presentation, busi
 
 ```text
 React + TypeScript
-        |
-        | HTTP / JSON
-        v
+       |
+       | HTTP / JSON
+       v
 Spring Boot REST API
-        |
-        v
+       |
+       v
 Controller Layer
-        |
-        v
-Service Layer
-        |
-        v
+       |
+       v
+Service Interface
+       |
+       v
+Service Implementation
+       |
+       v
 Repository Layer
-        |
-        v
+       |
+       v
 MySQL Database
 ```
 
 ### Architectural Responsibilities
 
 - **Controller Layer:** Handles HTTP requests, validates request input, and returns appropriate responses.
-- **Service Layer:** Contains business rules and coordinates application operations.
+- **Service Layer:** Defines application operations through service interfaces and implements business rules in service implementation classes.
 - **Repository Layer:** Provides database access through Spring Data JPA.
 - **Entity Layer:** Represents persistent domain objects and their relationships.
+- **DTO Layer:** Separates API request and response structures from database entities.
 - **Frontend Services:** Encapsulate API communication between React components and the backend.
 
 ## Project Structure
@@ -82,8 +86,15 @@ nexus-backend/
 ├── src/
 │   ├── main/
 │   │   ├── java/
-│   │   │   └── com/nexus/nexus_backend/
-│   │   │       └── NexusBackendApplication.java
+│   │   │   └── com/nexus/backend/
+│   │   │       ├── controller/
+│   │   │       ├── dto/
+│   │   │       │   ├── request/
+│   │   │       │   └── response/
+│   │   │       ├── entity/
+│   │   │       ├── repository/
+│   │   │       └── service/
+│   │   │           └── impl/
 │   │   └── resources/
 │   │       └── application.properties
 │   └── test/
@@ -94,7 +105,7 @@ nexus-backend/
 └── README.md
 ```
 
-As features are implemented, packages for controllers, services, repositories, entities, DTOs, configuration, and exception handling will be introduced.
+The structure will expand as configuration, exception handling, authentication, and additional domain features are implemented.
 
 ## Getting Started
 
@@ -154,24 +165,30 @@ On Windows, execute the Maven Wrapper from the project root:
 mvnw.cmd spring-boot:run
 ```
 
-Alternatively, import the project into Eclipse as an existing Maven project and run `NexusBackendApplication.java` as a Java application.
+Alternatively, import the project into Eclipse as an existing Maven project and run `NexusBackendApplication.java` as a Spring Boot application.
 
 When the application starts successfully, the backend should be available at:
 
-```text
-http://localhost:8080
-```
+`http://localhost:8080`
 
-Individual API endpoints will become available as their corresponding features are implemented.
+## Implemented API Endpoints
 
-## API Roadmap
+The following job application endpoints have been implemented and tested.
 
-The following endpoints are planned. They are not necessarily available in the current build.
+| HTTP Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/job-applications` | Create a job application |
+| `GET` | `/api/v1/job-applications` | Retrieve all job applications |
+| `GET` | `/api/v1/job-applications/{id}` | Retrieve a job application by ID |
+| `DELETE` | `/api/v1/job-applications/{id}` | Delete a job application by ID |
+
+### API Roadmap
+
+The following endpoints are planned and may not yet be implemented.
 
 | Resource | Planned Endpoint |
 |---|---|
 | Authentication | `/api/auth/register`, `/api/auth/login` |
-| Job Applications | `/api/applications` |
 | Interviews | `/api/interviews` |
 | Skills | `/api/skills` |
 | Learning Goals | `/api/goals` |
@@ -187,6 +204,8 @@ NEXUS is being developed with the following principles in mind:
 
 - Separation of concerns through layered architecture.
 - RESTful API design and consistent HTTP response semantics.
+- DTOs for separating external API contracts from persistence entities.
+- Service interfaces and implementations for clear business-layer responsibilities.
 - Input validation and centralized exception handling.
 - Relational data integrity and appropriate database indexing.
 - Secure password handling and server-side authorization.
@@ -194,23 +213,82 @@ NEXUS is being developed with the following principles in mind:
 - Maintainable code, meaningful commits, and version-controlled changes.
 - Automated testing as application functionality expands.
 
+## Troubleshooting & Development Challenges
+
+This section documents technical challenges encountered during NEXUS development, the debugging steps performed, the resolutions applied, and the lessons learned.
+
+### 1. Spring Boot Port Conflict
+
+**Problem:** The backend could not start because port `8080` was already in use.
+
+**Resolution:** Freed the occupied port and restarted the intended Spring Boot application.
+
+**Lesson learned:** Check port availability and running processes when a Spring Boot application fails to start.
+
+### 2. GitHub Push Rejected
+
+**Problem:** The initial Git push was rejected because the remote repository already contained an initial commit that was missing from the local repository.
+
+**Resolution:** Pulled the remote changes using `git pull origin main --allow-unrelated-histories`, reconciled the repository histories, and successfully pushed the changes.
+
+**Lesson learned:** Independently initialized local and remote repositories may have unrelated Git histories that need to be reconciled.
+
+### 3. Individual REST Endpoints Returning 404
+
+**Problem:** Requests to the individual job application GET and DELETE endpoints returned `404 Not Found`, even though the controller methods appeared correctly implemented.
+
+**Debugging:** Inspected the controller mappings and enabled Spring MVC request-mapping TRACE logs.
+
+```properties
+logging.level.org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping=TRACE
+```
+
+**Resolution:** Verified the registered request mappings and restarted the application. The endpoints subsequently worked.
+
+**Lesson learned:** When an endpoint returns 404, verify route registration and the running application before rewriting controller methods that appear correct.
+
+### 4. Verifying Generated Database IDs
+
+**Problem:** Testing an individual job application using an assumed ID can fail if the record does not exist.
+
+**Debugging:** Used the collection endpoint to inspect existing records and their generated IDs.
+
+**Resolution:** Used the actual ID returned by the API when testing individual GET and DELETE requests.
+
+**Lesson learned:** Always verify database-generated identifiers rather than assuming their values.
+
+### 5. Database and JPA Diagnostics
+
+**Problem:** Backend development requires distinguishing application startup issues from database connectivity, persistence, and HTTP request issues.
+
+**Debugging:** Examined Spring Boot startup logs, Hibernate initialization messages, generated SQL statements, and API responses.
+
+**Resolution:** Confirmed successful JPA initialization, observed database insert and select operations, and tested API endpoints individually.
+
+**Lesson learned:** Use application logs and focused API tests to isolate problems before modifying application code.
+
+*This troubleshooting log will be updated as development continues. Each entry should document an issue actually encountered, the diagnostic steps taken, the verified resolution, and the technical lesson learned.*
+
 ## Development Roadmap
 
 - [x] Initialize the Spring Boot backend project.
 - [x] Configure Java 17 and the build environment.
 - [x] Initialize Git version control.
-- [ ] Complete GitHub repository integration.
-- [ ] Configure and verify MySQL connectivity.
-- [ ] Implement the first job application API.
-- [ ] Persist and retrieve application records.
+- [x] Integrate the backend with GitHub.
+- [x] Configure and verify MySQL connectivity.
+- [x] Implement job application creation and retrieval APIs.
+- [x] Implement individual job application retrieval and deletion APIs.
+- [ ] Complete job application update functionality.
+- [ ] Add custom exception handling and consistent API error responses.
+- [ ] Complete request validation and automated backend tests.
 - [ ] Build the React and TypeScript frontend.
 - [ ] Integrate frontend forms with backend APIs.
 - [ ] Implement authentication and authorization.
 - [ ] Add interviews, skills, learning goals, and projects.
 - [ ] Build dashboard analytics and reporting.
-- [ ] Add automated tests and production-readiness improvements.
+- [ ] Improve security and production readiness.
 
-*Checklist items should be updated as each milestone is completed and verified.*
+*Checklist items are marked complete only after implementation and verification.*
 
 ## Contributing
 
@@ -235,4 +313,4 @@ GitHub: [@Jaideeeppp](https://github.com/Jaideeeppp)
 
 ---
 
-*NEXUS — Organize your career. Track your progress. Build your future.*# Nexus-Backend
+*NEXUS — Organize your career. Track your progress. Build your future.*
